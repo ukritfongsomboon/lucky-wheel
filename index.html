@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wheel Pro: Array Input Support</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-purple: #7000ff;
+            --dark-bg: #0f1016;
+            --font-thai: 'Noto Sans Thai', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: var(--dark-bg);
+            color: white;
+            font-family: var(--font-thai);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden; /* ป้องกัน scroll แนวนอน */
+        }
+
+        .app-container {
+            display: flex;
+            gap: 50px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* --- SETUP PANEL --- */
+        .setup-panel {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 320px;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        /* กล่อง Input เดิม (ทีละชื่อ) */
+        .input-group {
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 15px;
+        }
+        .input-box { display: flex; gap: 10px; }
+        
+        input, textarea {
+            width: 100%;
+            background: #1a1b25;
+            border: 1px solid rgba(0, 242, 255, 0.5);
+            padding: 10px;
+            color: white;
+            border-radius: 8px;
+            outline: none;
+            font-family: var(--font-thai);
+            box-sizing: border-box; /* สำคัญ: ไม่ให้กล่องล้น */
+        }
+        
+        button {
+            background: var(--neon-blue);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-family: var(--font-thai);
+            transition: 0.2s;
+        }
+        button:hover { filter: brightness(1.2); }
+        button:active { transform: scale(0.95); }
+
+        /* ส่วน Bulk Input (แบบ Array) */
+        .bulk-section {
+            margin-top: 10px;
+        }
+        .bulk-label {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 5px;
+            display: block;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        .bulk-btn {
+            width: 100%;
+            background: rgba(112, 0, 255, 0.3); /* สีม่วงโปร่งแสง */
+            border: 1px solid var(--neon-purple);
+            color: var(--neon-blue);
+        }
+
+        #item-list { list-style: none; padding: 0; max-height: 200px; overflow-y: auto; margin-top: 15px; }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.07);
+            margin-bottom: 5px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .del-btn { color: #ff4d4d; cursor: pointer; }
+
+        /* --- WHEEL STYLES --- */
+        .wheel-panel { position: relative; display: flex; flex-direction: column; align-items: center; }
+        
+        #wheel-wrapper {
+            position: relative;
+            width: 450px;
+            height: 450px;
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
+            border-radius: 50%;
+            padding: 10px;
+            box-shadow: 0 0 60px rgba(0, 242, 255, 0.2);
+        }
+
+        .indicator {
+            position: absolute;
+            top: -25px; left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid var(--neon-blue);
+            z-index: 100;
+            filter: drop-shadow(0 0 10px var(--neon-blue));
+        }
+
+        #wheel {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            background: #15161d;
+        }
+
+        .segment {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 0; height: 0;
+            pointer-events: none;
+        }
+
+        .segment span {
+            position: absolute;
+            top: 0; left: 0;
+            transform-origin: 0% 50%;
+            padding-left: 60px; 
+            width: 220px;
+            transform: translateY(-50%); 
+            text-align: left;
+            font-weight: 700;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        #spin-btn {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px; height: 80px;
+            background: white;
+            color: black;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 900;
+            cursor: pointer;
+            z-index: 50;
+            box-shadow: 0 0 30px rgba(255,255,255,0.8);
+            user-select: none;
+        }
+
+        #result-display {
+            margin-top: 30px;
+            font-size: 2rem;
+            color: var(--neon-blue);
+            font-weight: 700;
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+            min-height: 1.5em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="setup-panel">
+        <h2 style="color:var(--neon-blue); margin-top:0;">🎡 จัดการรายชื่อ</h2>
+        
+        <div class="input-group">
+            <label class="bulk-label">เพิ่มทีละชื่อ:</label>
+            <div class="input-box">
+                <input type="text" id="item-input" placeholder="พิมพ์ชื่อแล้ว Enter...">
+                <button id="add-btn">เพิ่ม</button>
+            </div>
+        </div>
+
+        <div class="bulk-section">
+            <label class="bulk-label">หรือ เพิ่มแบบกลุ่ม (คั่นด้วย , หรือบรรทัดใหม่):</label>
+            <textarea id="bulk-input" rows="3" placeholder="ตัวอย่าง: แดง, ดำ, เขียว&#10;หรือก๊อปปี้รายชื่อมาวางที่นี่..."></textarea>
+            <button id="bulk-btn" class="bulk-btn">📥 นำเข้ารายชื่อทั้งหมด</button>
+        </div>
+
+        <div id="item-list"></div>
+        <div style="text-align:right; margin-top:10px;">
+             <small onclick="clearAll()" style="color:#ff4d4d; cursor:pointer; text-decoration:underline;">ล้างทั้งหมด</small>
+        </div>
+    </div>
+
+    <div class="wheel-panel">
+        <div class="indicator"></div>
+        <div id="wheel-wrapper">
+            <div id="wheel"></div>
+            <div id="spin-btn">SPIN</div>
+        </div>
+        <div id="result-display">พร้อมแล้วลุยเลย!</div>
+    </div>
+</div>
+
+<script>
+    let prizes = ["รางวัลที่ 1", "รางวัลที่ 2", "รางวัลที่ 3", "รางวัลที่ 4"];
+    const wheel = document.getElementById('wheel');
+    const itemInput = document.getElementById('item-input');
+    const bulkInput = document.getElementById('bulk-input');
+    const itemList = document.getElementById('item-list');
+    const resultDisplay = document.getElementById('result-display');
+    
+    // --- Audio System ---
+    let audioCtx = null;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    function playTickSound() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+    function playWinSound() {
+        if (!audioCtx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            const startTime = audioCtx.currentTime + (i * 0.1);
+            gain.gain.setValueAtTime(0.2, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + 0.5);
+        });
+    }
+
+    // --- Wheel Logic ---
+    function renderWheel() {
+        const num = prizes.length;
+        const step = 360 / num;
+        wheel.innerHTML = '';
+        const gradient = prizes.map((_, i) => `${i % 2 === 0 ? '#1a1b25' : '#2d2f41'} ${i * step}deg ${(i + 1) * step}deg`).join(',');
+        wheel.style.background = `conic-gradient(${gradient})`;
+
+        prizes.forEach((p, i) => {
+            const div = document.createElement('div');
+            div.className = 'segment';
+            const angle = (i * step) + (step / 2) - 90;
+            div.style.transform = `rotate(${angle}deg)`;
+            const span = document.createElement('span');
+            span.innerText = p;
+            div.appendChild(span);
+            wheel.appendChild(div);
+        });
+    }
+
+    function renderList() {
+        itemList.innerHTML = prizes.map((p, i) => `
+            <div class="item-row">
+                <span>${i+1}. ${p}</span>
+                <span class="del-btn" onclick="removeItem(${i})">✕</span>
+            </div>
+        `).join('');
+    }
+
+    // 1. เพิ่มทีละชื่อ
+    function addItem() {
+        const val = itemInput.value.trim();
+        if (val) {
+            prizes.push(val);
+            itemInput.value = '';
+            renderWheel();
+            renderList();
+        }
+    }
+    document.getElementById('add-btn').onclick = addItem;
+    itemInput.onkeypress = (e) => { if (e.key === 'Enter') addItem(); };
+
+    // 2. เพิ่มแบบกลุ่ม (Bulk Import Array)
+    document.getElementById('bulk-btn').onclick = () => {
+        const rawText = bulkInput.value;
+        if (!rawText.trim()) return;
+
+        // แยกข้อความด้วย คอมม่า(,) หรือ ขึ้นบรรทัดใหม่(\n)
+        const newItems = rawText.split(/[\n,]+/)
+            .map(item => item.trim()) // ลบช่องว่างหน้าหลัง
+            .filter(item => item !== ""); // เอาเฉพาะที่มีข้อความ
+
+        if (newItems.length > 0) {
+            // นำไปต่อท้ายรายการเดิม (ถ้าอยากให้แทนที่ของเดิม ให้ใช้ prizes = newItems;)
+            prizes.push(...newItems); 
+            bulkInput.value = ''; // เคลียร์ช่อง
+            renderWheel();
+            renderList();
+        }
+    };
+
+    window.removeItem = (i) => {
+        if (prizes.length > 2) {
+            prizes.splice(i, 1);
+            renderWheel();
+            renderList();
+        } else {
+            alert("เหลือไว้อย่างน้อย 2 รางวัลนะครับ");
+        }
+    };
+
+    window.clearAll = () => {
+        if(confirm("ต้องการล้างรายชื่อทั้งหมดใช่ไหม?")) {
+            prizes = ["ตัวอย่าง 1", "ตัวอย่าง 2"]; // เหลือค่าเริ่มต้นไว้กันพัง
+            renderWheel();
+            renderList();
+        }
+    };
+
+    // --- Animation & Sound Loop ---
+    let currentRotation = 0;
+    let isSpinning = false;
+    let startTime = 0;
+    
+    document.getElementById('spin-btn').onclick = () => {
+        if (isSpinning) return;
+        initAudio();
+        isSpinning = true;
+        resultDisplay.innerText = "กำลังหมุน...";
+        
+        const randomDeg = Math.floor(Math.random() * 360) + 2160; 
+        const startRotation = currentRotation;
+        const targetRotation = startRotation + randomDeg;
+        const step = 360 / prizes.length;
+        let lastSegment = Math.floor(startRotation / step);
+        startTime = null;
+
+        function animate(time) {
+            if (!startTime) startTime = time;
+            const progress = Math.min((time - startTime) / 5000, 1);
+            const ease = 1 - Math.pow(1 - progress, 4); // EaseOutQuart
+
+            currentRotation = startRotation + (targetRotation - startRotation) * ease;
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            // Sound Trigger
+            const currentSegment = Math.floor((currentRotation) / step);
+            if (currentSegment > lastSegment) {
+                playTickSound();
+                lastSegment = currentSegment;
+            }
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                isSpinning = false;
+                const actualRotation = currentRotation % 360;
+                const prizeIndex = Math.floor((360 - actualRotation) / (360 / prizes.length)) % prizes.length;
+                resultDisplay.innerText = "🎉 " + prizes[prizeIndex] + " 🎉";
+                playWinSound();
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#00f2ff', '#7000ff', '#ffffff'] });
+            }
+        }
+        requestAnimationFrame(animate);
+    };
+
+    renderWheel();
+    renderList();
+</script>
+
+</body>
+</html>
