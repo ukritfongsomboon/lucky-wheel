@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wheel Pro: Array Input Support</title>
+    <title>Lucky Wheel</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&display=swap" rel="stylesheet">
@@ -239,7 +239,19 @@
 </div>
 
 <script>
-    let prizes = ["รางวัลที่ 1", "รางวัลที่ 2", "รางวัลที่ 3", "รางวัลที่ 4"];
+// --- แก้ไขรายการ Default ตรงนี้ครับ ---
+    let prizes = [
+        "ข้าวมันไก่", 
+        "กะเพราหมูสับ", 
+        "ส้มตำไทย", 
+        "ต้มยำกุ้ง", 
+        "ผัดไทย", 
+        "ข้าวขาหมู", 
+        "ก๋วยเตี๋ยวเรือ", 
+        "แกงเขียวหวาน", 
+        "ข้าวผัดปู", 
+        "หมูกระทะ"
+    ];
     const wheel = document.getElementById('wheel');
     const itemInput = document.getElementById('item-input');
     const bulkInput = document.getElementById('bulk-input');
