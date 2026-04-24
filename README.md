@@ -48,3 +48,8 @@ let prizes = [
     "ชาบู", 
     // เพิ่มเมนูของคุณที่นี่...
 ];
+```
+
+## License
+
+Released under the [MIT License](LICENSE). Copyright (c) 2026 Ukrit Fongsomboon.
